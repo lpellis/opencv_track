@@ -1,3 +1,4 @@
+#include "opencv2/opencv.hpp"
 #include "opencv2/highgui/highgui.hpp"
 #include "opencv2/imgproc/imgproc.hpp"
 #include <iostream>
@@ -17,9 +18,7 @@ Mat cmat;
 int match_method;
 int max_Trackbar = 5;
 Mat kk;
-
-/// Function Headers
-void MatchingMethod(int, void*);
+Rect theRect = Rect(10, 10,20,20);
 
 /** @function main */
 int main(int argc, char** argv) {
@@ -31,6 +30,7 @@ int main(int argc, char** argv) {
 
 	Mat subimage;
 	Mat frame;
+	Mat tracking_points;
 	int count = 0;
 
 	while (true) {
@@ -49,10 +49,40 @@ int main(int argc, char** argv) {
 		if (count > 20) {
 			break;
 		}
-	}
 
+
+
+	}
+	TermCriteria criteria(TermCriteria::COUNT+TermCriteria::EPS, 30, 0.01);
 	cvtColor(frame, edges, CV_BGR2GRAY);
-	edges(Rect(300, 200, 50, 50)).copyTo(subimage);
+//	edges(Rect(300, 200, 50, 50)).copyTo(subimage);
+	edges.copyTo(subimage);
+
+
+	Mat status, err, tracking_points_2;
+	goodFeaturesToTrack(edges, tracking_points, 10, 0.1, 5, Mat(), 100, false, 4);
+
+
+	cout << tracking_points.at<float>(2,1) << endl;
+	cout << tracking_points.at<float, 2>(0) << endl;
+	cout << tracking_points.row(2).at<float>(1) << endl;
+	cap >> frame; // get a new frame from camera
+	cvtColor(frame, edges, CV_BGR2GRAY);
+
+	calcOpticalFlowPyrLK(subimage, edges, tracking_points, tracking_points_2, status, err, Size(20,20), 10, criteria, 0, 0);
+
+	tracking_points_2.at<float>(2,1) = 5.1;
+	cout << tracking_points_2.at<float>(2,1) << endl;
+	int i = 0;
+	Mat bla = tracking_points;
+
+	cout << bla << endl;
+	cv::Point(0,0);
+
+	cout << bla << endl;
+	for (int i=0; i < tracking_points_2.rows; i++){
+//		circle(edges, Point(tracking_points_2.row(i).row[0], tracking_points_2.row(i).row[1]), 5, CV_RGB(100,100,100), 2, 1, 0);
+	}
 
 	while (true) {
 
@@ -69,7 +99,6 @@ int main(int argc, char** argv) {
 
 		result.create(result_cols, result_rows, CV_32FC1);
 
-		/// Do the Matching and Normalize
 		matchTemplate(edges, subimage, result, CV_TM_SQDIFF_NORMED);
 
 //		normalize(result, result, 0, 1, NORM_MINMAX, -1, Mat());
@@ -91,11 +120,10 @@ int main(int argc, char** argv) {
 		}
 
 		cout.precision(15);
-		cout << minVal << endl;
 
-		/// Show me what you got
+		cvtColor(edges, edges, CV_GRAY2BGR);
 		rectangle(edges, matchLoc,
-				Point(matchLoc.x + templ.cols + 50, matchLoc.y + templ.rows + 50), Scalar::all(0),
+				Point(matchLoc.x + templ.cols + 50, matchLoc.y + templ.rows + 50), CV_RGB(2550 * minVal,0, 0),
 				2, 8, 0);
 
 		imshow("Camera", edges);
